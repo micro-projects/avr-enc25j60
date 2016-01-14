@@ -1,7 +1,7 @@
 #include <EtherCard.h>
 
 // Network unique mac address
-static byte macAddress[] = { 0x69,0x69,0x69,0x69,0x69,0x69 };
+static byte macAddress[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
 
 byte Ethernet::buffer[700];
 static uint32_t timer;
@@ -17,7 +17,6 @@ static void gotPinged(byte* source) {
   ether.printIp("Ping from: ", source);
 }
 
-
 /**
  * The setup function gets called
  * at the application start
@@ -31,7 +30,8 @@ void setup () {
   if (ether.begin(sizeof Ethernet::buffer, macAddress, 53) == 0) {
     Serial.println(F("Failed to access Ethernet controller"));
   }
-  // use DNS to get our IP and the Gateway
+
+  // use DHCP to get our IP and the Gateway
   if (!ether.dhcpSetup()) {
     Serial.println(F("DHCP failed"));
   }
@@ -52,7 +52,6 @@ void setup () {
   timer = -9999999; // start timing out right away
   Serial.println();
 }
-
 
 /**
  * The loop function get scalled after the
