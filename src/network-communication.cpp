@@ -9,10 +9,7 @@ static byte hisip[] = { 192,168,1,114 };
 
 byte Ethernet::buffer[700];
 BufferFiller buffer;
-
-static uint32_t timer;
-byte value;
-int pin = 21;
+byte value = 0;
 
 const char remote[] PROGMEM = "192.168.1.114";
 
@@ -45,12 +42,6 @@ static void gotResponse(byte status, word offset, word length) {
   Serial.print((const char*) Ethernet::buffer + offset);
 }
 
-void setValue() {
-  byte value = PORTD;
-  Serial.print("Val: ");
-  Serial.println(value);
-}
-
 /**
  * The setup function gets called
  * at the application start
@@ -78,16 +69,13 @@ void setup () {
   ether.printIp("SRV:      ", ether.hisip);
 
   // Attach to interrupt
-  pinMode(pin, OUTPUT);
-  attachInterrupt(2, setValue, RISING);
-  Serial.print("DDRD: ");
-  Serial.println(DDRD);
-
-  // Test request
-  byte value = 55;
-  char * sss = " ";
-  sss[0] = value;
-  ether.browseUrl(PSTR("/?value="), sss, remote, gotResponse);
+  DDRD = 0x00; // all bits to input
+  // Enable INT0 External Interrupt
+  bitWrite(EIMSK, INT0, 1);
+  // Rising edge triggered
+  bitWrite(EICRA, ISC00, 1);
+  bitWrite(EICRA, ISC01, 1);
+  sei(); // Enable the interupts
 }
 
 /**
@@ -112,9 +100,17 @@ void loop () {
   if (value) {
     char * querryString = " ";
     querryString[0] = value;
-    value = 0; // Reset the value, can only be changed by the interupt
     Serial.print("GET /");
     Serial.println(querryString);
     ether.browseUrl(PSTR("/?value="), querryString, remote, gotResponse);
+    value = 0; // Reset the value, can only be changed by the interupt
   }
+}
+
+/**
+ * Interrupt service routine (int.0)
+ * reads the value from PIND
+ */
+ISR(INT0_vect) {
+  value = PIND;
 }
