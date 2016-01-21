@@ -5,18 +5,16 @@ static byte macAddress[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
 // ethernet interface ip address
 static byte ipAddress[] = { 192,168,1,110 };
 // remote website ip address and port
-static byte hisip[] = { 192,168,0,111 };
+static byte hisip[] = { 192,168,1,114 };
 
 byte Ethernet::buffer[700];
 BufferFiller buffer;
 
 static uint32_t timer;
+byte value;
+int pin = 21;
 
-const char remote[] PROGMEM = "192.168.0.111";
-const char okHeader[] PROGMEM =
-  "HTTP/1.0 200 OK\r\n"
-  "Content-Type: text/html\r\n"
-  "Pragma: no-cache\r\n";
+const char remote[] PROGMEM = "192.168.1.114";
 
 /**
  * Returns a response buffer.
@@ -27,7 +25,7 @@ const char okHeader[] PROGMEM =
  */
 static word sendResponse() {
   buffer = ether.tcpOffset();
-  buffer.emit_p(PSTR("$F\r\n20"), okHeader);
+  buffer.emit_p(PSTR("HTTP/1.0 200 OK"));
   return buffer.position();
 }
 
@@ -43,13 +41,14 @@ static word sendResponse() {
  *  The package length
  */
 static void gotResponse(byte status, word offset, word length) {
-  Serial.print("STATUS: ");
-  Serial.println(status);
-  Serial.println();
-
   Ethernet::buffer[offset+300] = 0;
   Serial.print((const char*) Ethernet::buffer + offset);
-  Serial.println("...");
+}
+
+void setValue() {
+  byte value = PORTD;
+  Serial.print("Val: ");
+  Serial.println(value);
 }
 
 /**
@@ -78,8 +77,17 @@ void setup () {
   ether.printIp("Mask:     ", ether.netmask);
   ether.printIp("SRV:      ", ether.hisip);
 
-  timer = -9999999; // start timing out right away
-  Serial.println();
+  // Attach to interrupt
+  pinMode(pin, OUTPUT);
+  attachInterrupt(2, setValue, RISING);
+  Serial.print("DDRD: ");
+  Serial.println(DDRD);
+
+  // Test request
+  byte value = 55;
+  char * sss = " ";
+  sss[0] = value;
+  ether.browseUrl(PSTR("/?value="), sss, remote, gotResponse);
 }
 
 /**
@@ -92,12 +100,21 @@ void loop () {
   word position = ether.packetLoop(packetLength); // respond to incoming pings
 
   if (position) {
+    char* data = (char *) Ethernet::buffer + position;
+    Serial.println(data);
+    // The value can be found at position 12
+    int value = data[12];
+    Serial.print("Got: ");
+    Serial.println(value);
     ether.httpServerReply(sendResponse()); // send web page data
   }
 
-  if (micros() - timer >= 5000000) {
-    ehter.printip("GET / ", ether.hisip);
-    timer = micros();
-    ether.browseUrl(PSTR("192.168.0.111"), "", remote, gotResponse);
+  if (value) {
+    char * querryString = " ";
+    querryString[0] = value;
+    value = 0; // Reset the value, can only be changed by the interupt
+    Serial.print("GET /");
+    Serial.println(querryString);
+    ether.browseUrl(PSTR("/?value="), querryString, remote, gotResponse);
   }
 }
