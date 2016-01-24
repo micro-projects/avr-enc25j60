@@ -1,17 +1,25 @@
 #include <EtherCard.h>
 
-// Network unique mac address
-static byte macAddress[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
-// ethernet interface ip address
-static byte ipAddress[] = { 192,168,1,110 };
-// remote website ip address and port
-static byte hisip[] = { 192,168,1,114 };
+static byte gateway[] = { 192,168,1,1 };
 
+// Setting up mac, ip, gateway and destination address
+#ifdef NODE == 1
+  static byte macAddress[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
+  static byte ipAddress[] = { 192,168,1,110 };
+  static byte hisip[] = { 192,168,1,120 };
+  const char remote[] PROGMEM = "192.168.1.120";
+#else
+  static byte macAddress[] = { 0x74,0x69,0x69,0x2D,0x30,0x30 };
+  static byte ipAddress[] = { 192,168,1,120 };
+  static byte hisip[] = { 192,168,1,110 };
+  const char remote[] PROGMEM = "192.168.1.110";
+#endif // NODE == 1
+
+// Ring buffers
 byte Ethernet::buffer[700];
 BufferFiller buffer;
 byte value = 0;
 
-const char remote[] PROGMEM = "192.168.1.114";
 
 /**
  * Returns a response buffer.
@@ -56,7 +64,7 @@ void setup () {
     Serial.println(F("Failed to access Ethernet controller"));
   }
 
-  if (!ether.dhcpSetup()) {
+  if (!ether.staticSetup(ipAddress, gateway)) {
     Serial.println(F("Failed to set the ip address"));
   }
 

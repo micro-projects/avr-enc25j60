@@ -4,7 +4,7 @@ AVRDUDE_PROGRAMMER = stk600
 AVRDUDE_PORT = usb
 
 all:
-	ino build -m $(MCU)
+	ino build -m $(MCU) --cflags="-DNODE=${NODE}" --cxxflags="-DNODE=${NODE}"
 
 install:
 	avrdude -p $(TARGET) -c $(AVRDUDE_PROGRAMMER) -P $(AVRDUDE_PORT) -U flash:w:.build/$(MCU)/firmware.hex
