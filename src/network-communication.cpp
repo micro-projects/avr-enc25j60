@@ -3,7 +3,7 @@
 static byte gateway[] = { 192,168,1,1 };
 
 // Setting up mac, ip, gateway and destination address
-#ifdef NODE == 1
+#if (NODE == 1)
   static byte macAddress[] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
   static byte ipAddress[] = { 192,168,1,110 };
   static byte hisip[] = { 192,168,1,120 };
