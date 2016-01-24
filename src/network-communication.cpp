@@ -1,6 +1,9 @@
 #include <EtherCard.h>
 
-static byte gateway[] = { 192,168,1,1 };
+// TODO HACK! Wtf is going on here O_o ?!
+static byte gateway[] = { 192,168,1,110 };
+static byte netmask[] = { 255,255,255,0 };
+static byte broadcast[] =  { 192,168,1,255 };
 
 // Setting up mac, ip, gateway and destination address
 #if (NODE == 1)
@@ -51,6 +54,18 @@ static void gotResponse(byte status, word offset, word length) {
 }
 
 /**
+ * Ping callback,
+ * this function gets called when a
+ * ICMP Request is received
+ * @param source:
+ *  The source IP where the ping comes from
+ */
+static void gotPinged(byte* source) {
+  ether.printIp("Ping from: ", source);
+}
+
+
+/**
  * The setup function gets called
  * at the application start
  */
@@ -68,12 +83,22 @@ void setup () {
     Serial.println(F("Failed to set the ip address"));
   }
 
+  /*if (!ether.dhcpSetup()) {
+    Serial.println(F("DHCP Failed!"));
+  }*/
+
   // set the ip to ping
   ether.copyIp(ether.hisip, hisip);
+  ether.copyIp(ether.dhcpip, gateway);
+  ether.copyIp(ether.netmask, netmask);
+  ether.copyIp(ether.broadcastip, broadcast);
 
   ether.printIp("IP:       ", ether.myip);
   ether.printIp("Gateway:  ", ether.gwip);
   ether.printIp("Mask:     ", ether.netmask);
+  ether.printIp("Broadcast ", ether.broadcastip);
+  ether.printIp("DHCP      ", ether.dhcpip);
+  ether.printIp("DNS       ", ether.dnsip);
   ether.printIp("SRV:      ", ether.hisip);
 
   // Attach to interrupt
@@ -84,6 +109,8 @@ void setup () {
   bitWrite(EICRA, ISC00, 1);
   bitWrite(EICRA, ISC01, 1);
   sei(); // Enable the interupts
+
+  ether.registerPingCallback(gotPinged);
 }
 
 /**
